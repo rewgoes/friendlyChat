@@ -26,23 +26,23 @@ import android.text.TextWatcher
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.*
-import com.google.firebase.database.DatabaseReference
-import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.*
 import java.util.*
 
 class MainActivity : AppCompatActivity() {
 
-    private var mMessageListView: ListView? = null
-    private var mMessageAdapter: MessageAdapter? = null
-    private var mProgressBar: ProgressBar? = null
-    private var mPhotoPickerButton: ImageButton? = null
-    private var mMessageEditText: EditText? = null
-    private var mSendButton: Button? = null
+    private lateinit var mMessageListView: ListView
+    private lateinit var mMessageAdapter: MessageAdapter
+    private lateinit var mProgressBar: ProgressBar
+    private lateinit var mPhotoPickerButton: ImageButton
+    private lateinit var mMessageEditText: EditText
+    private lateinit var mSendButton: Button
 
     private var mUsername: String? = null
 
     private var mFirebaseDatabase: FirebaseDatabase? = null
     private var mMessagesDatabaseReference: DatabaseReference? = null
+    private var mChildEventListener: ChildEventListener? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,38 +63,65 @@ class MainActivity : AppCompatActivity() {
         // Initialize message ListView and its adapter
         val friendlyMessages = ArrayList<FriendlyMessage>()
         mMessageAdapter = MessageAdapter(this, R.layout.item_message, friendlyMessages)
-        mMessageListView!!.adapter = mMessageAdapter
+        mMessageListView.adapter = mMessageAdapter
 
         // Initialize progress bar
-        mProgressBar!!.visibility = ProgressBar.INVISIBLE
+        mProgressBar.visibility = ProgressBar.INVISIBLE
 
         // ImagePickerButton shows an image picker to upload a image for a message
-        mPhotoPickerButton!!.setOnClickListener {
+        mPhotoPickerButton.setOnClickListener {
             // TODO: Fire an intent to show an image picker
         }
 
         // Enable Send button when there's text to send
-        mMessageEditText!!.addTextChangedListener(object : TextWatcher {
+        mMessageEditText.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
 
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
-                mSendButton!!.isEnabled = charSequence.toString().trim { it <= ' ' }.isNotEmpty()
+                mSendButton.isEnabled = charSequence.toString().trim { it <= ' ' }.isNotEmpty()
             }
 
             override fun afterTextChanged(editable: Editable) {}
         })
-        mMessageEditText!!.filters = arrayOf<InputFilter>(InputFilter.LengthFilter(DEFAULT_MSG_LENGTH_LIMIT))
+        mMessageEditText.filters = arrayOf<InputFilter>(InputFilter.LengthFilter(DEFAULT_MSG_LENGTH_LIMIT))
 
         // Send button sends a message and clears the EditText
-        mSendButton!!.setOnClickListener {
+        mSendButton.setOnClickListener {
             // TODO: Send messages on click
-            val friendlyMessage = FriendlyMessage(mMessageEditText!!.text.toString(), mUsername!!, null)
+            val friendlyMessage = FriendlyMessage(mMessageEditText.text.toString(), mUsername!!, null)
 
             mMessagesDatabaseReference!!.push().setValue(friendlyMessage)
 
             // Clear input box
-            mMessageEditText!!.setText("")
+            mMessageEditText.setText("")
         }
+
+        mChildEventListener = object : ChildEventListener {
+            override fun onChildAdded(p0: DataSnapshot?, p1: String?) {
+                val friendlyMessage = p0?.getValue(FriendlyMessage::class.java)
+
+                if (friendlyMessage != null) {
+                    mMessageAdapter.add(friendlyMessage)
+                }
+            }
+
+            override fun onCancelled(p0: DatabaseError?) {
+                TODO("not implemented") //N.A
+            }
+
+            override fun onChildMoved(p0: DataSnapshot?, p1: String?) {
+                TODO("not implemented") //N.A
+            }
+
+            override fun onChildChanged(p0: DataSnapshot?, p1: String?) {
+                TODO("not implemented") //N.A
+            }
+
+            override fun onChildRemoved(p0: DataSnapshot?) {
+                TODO("not implemented") //N.A
+            }
+        }
+        mMessagesDatabaseReference!!.addChildEventListener(mChildEventListener)
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -108,7 +135,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     companion object {
-        val ANONYMOUS = "anonymous"
-        val DEFAULT_MSG_LENGTH_LIMIT = 1000
+        const val ANONYMOUS = "anonymous"
+        const val DEFAULT_MSG_LENGTH_LIMIT = 1000
     }
 }
