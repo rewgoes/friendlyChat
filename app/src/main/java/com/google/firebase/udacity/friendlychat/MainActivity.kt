@@ -26,6 +26,8 @@ import android.text.TextWatcher
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.*
+import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.FirebaseDatabase
 import java.util.*
 
 class MainActivity : AppCompatActivity() {
@@ -39,11 +41,17 @@ class MainActivity : AppCompatActivity() {
 
     private var mUsername: String? = null
 
+    private var mFirebaseDatabase: FirebaseDatabase? = null
+    private var mMessagesDatabaseReference: DatabaseReference? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         mUsername = ANONYMOUS
+
+        mFirebaseDatabase = FirebaseDatabase.getInstance()
+        mMessagesDatabaseReference = mFirebaseDatabase!!.reference.child("messages")
 
         // Initialize references to views
         mProgressBar = findViewById(R.id.progressBar)
@@ -80,6 +88,9 @@ class MainActivity : AppCompatActivity() {
         // Send button sends a message and clears the EditText
         mSendButton!!.setOnClickListener {
             // TODO: Send messages on click
+            val friendlyMessage = FriendlyMessage(mMessageEditText!!.text.toString(), mUsername!!, null)
+
+            mMessagesDatabaseReference!!.push().setValue(friendlyMessage)
 
             // Clear input box
             mMessageEditText!!.setText("")

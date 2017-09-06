@@ -23,7 +23,7 @@ class FriendlyMessage {
 
     constructor() {}
 
-    constructor(text: String, name: String, photoUrl: String) {
+    constructor(text: String, name: String, photoUrl: String?) {
         this.text = text
         this.name = name
         this.photoUrl = photoUrl
