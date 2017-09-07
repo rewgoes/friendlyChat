@@ -51,6 +51,7 @@ dependencies {
     compile "com.google.firebase:firebase-database:$firebase_version"
     compile "com.google.firebase:firebase-auth:$firebase_version"
     compile "com.google.firebase:firebase-storage:$firebase_version"
+    compile "com.google.firebase:firebase-messaging:$firebase_version"
     compile "com.firebaseui:firebase-ui-auth:$firebaseUi_version"
 }
 apply plugin: 'com.google.gms.google-services'
