@@ -31,6 +31,8 @@ import android.widget.*
 import com.firebase.ui.auth.AuthUI
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
+import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.storage.StorageReference
 import java.util.*
 
 
@@ -50,13 +52,16 @@ class MainActivity : AppCompatActivity() {
     private lateinit var mMessageEditText: EditText
     private lateinit var mSendButton: Button
 
-    private var mUsername: String? = null
+    private var mUsername: String = ANONYMOUS
 
     private lateinit var mFirebaseDatabase: FirebaseDatabase
     private lateinit var mMessagesDatabaseReference: DatabaseReference
     private var mChildEventListener: ChildEventListener? = null
     private lateinit var mFirebaseAuth: FirebaseAuth
     private lateinit var mAuthStateListener: FirebaseAuth.AuthStateListener
+
+    private lateinit var mFirebaseStorage: FirebaseStorage
+    private lateinit var mChatPhotosStoreageReference: StorageReference
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -66,7 +71,10 @@ class MainActivity : AppCompatActivity() {
 
         mFirebaseDatabase = FirebaseDatabase.getInstance()
         mFirebaseAuth = FirebaseAuth.getInstance()
+        mFirebaseStorage = FirebaseStorage.getInstance()
+
         mMessagesDatabaseReference = mFirebaseDatabase.reference.child("messages")
+        mChatPhotosStoreageReference = mFirebaseStorage.reference.child("chat_photos")
 
         // Initialize references to views
         mProgressBar = findViewById(R.id.progressBar)
@@ -105,7 +113,7 @@ class MainActivity : AppCompatActivity() {
 
         // Send button sends a message and clears the EditText
         mSendButton.setOnClickListener {
-            val friendlyMessage = FriendlyMessage(mMessageEditText.text.toString(), mUsername!!, null)
+            val friendlyMessage = FriendlyMessage(mMessageEditText.text.toString(), mUsername, null)
 
             mMessagesDatabaseReference.push().setValue(friendlyMessage)
 
@@ -142,6 +150,14 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "Sing in cancelled", Toast.LENGTH_SHORT).show()
                 finish()
             }
+        } else if (requestCode == RC_PHOTO_PICKER && resultCode == Activity.RESULT_OK) {
+            val selectedImageUri = data!!.data
+            val photoRef = mChatPhotosStoreageReference.child(selectedImageUri.lastPathSegment)
+            photoRef.putFile(selectedImageUri).addOnSuccessListener { taskSnapshot ->
+                val downloadUri = taskSnapshot.downloadUrl
+                val friendlyMessage = FriendlyMessage(null, mUsername, downloadUri.toString())
+                mMessagesDatabaseReference.push().setValue(friendlyMessage)
+            }
         }
     }
 
@@ -164,7 +180,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onSignInInitialize(username: String?) {
-        mUsername = username
+        mUsername = username ?: ANONYMOUS
         attachDatabaseReadListener()
     }
 
