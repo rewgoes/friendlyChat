@@ -15,6 +15,7 @@ android {
         targetSdkVersion 26
         versionCode 1
         versionName "1.0"
+        resConfigs "auto"
     }
     buildTypes {
         release {
@@ -48,5 +49,7 @@ dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
 
     compile "com.google.firebase:firebase-database:$firebase_version"
+    compile "com.google.firebase:firebase-auth:$firebase_version"
+    compile "com.firebaseui:firebase-ui-auth:$firebaseUi_version"
 }
 apply plugin: 'com.google.gms.google-services'

@@ -26,10 +26,19 @@ import android.text.TextWatcher
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.*
+import com.firebase.ui.auth.AuthUI
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
 import java.util.*
 
+
 class MainActivity : AppCompatActivity() {
+
+    companion object {
+        const val ANONYMOUS = "anonymous"
+        const val DEFAULT_MSG_LENGTH_LIMIT = 1000
+        const val RC_SIGN_IN = 1
+    }
 
     private lateinit var mMessageListView: ListView
     private lateinit var mMessageAdapter: MessageAdapter
@@ -40,9 +49,11 @@ class MainActivity : AppCompatActivity() {
 
     private var mUsername: String? = null
 
-    private var mFirebaseDatabase: FirebaseDatabase? = null
-    private var mMessagesDatabaseReference: DatabaseReference? = null
-    private var mChildEventListener: ChildEventListener? = null
+    private lateinit var mFirebaseDatabase: FirebaseDatabase
+    private lateinit var mMessagesDatabaseReference: DatabaseReference
+    private lateinit var mChildEventListener: ChildEventListener
+    private lateinit var mFirebaseAuth: FirebaseAuth
+    private lateinit var mAuthStateListener: FirebaseAuth.AuthStateListener
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,7 +62,8 @@ class MainActivity : AppCompatActivity() {
         mUsername = ANONYMOUS
 
         mFirebaseDatabase = FirebaseDatabase.getInstance()
-        mMessagesDatabaseReference = mFirebaseDatabase!!.reference.child("messages")
+        mFirebaseAuth = FirebaseAuth.getInstance()
+        mMessagesDatabaseReference = mFirebaseDatabase.reference.child("messages")
 
         // Initialize references to views
         mProgressBar = findViewById(R.id.progressBar)
@@ -90,7 +102,7 @@ class MainActivity : AppCompatActivity() {
             // TODO: Send messages on click
             val friendlyMessage = FriendlyMessage(mMessageEditText.text.toString(), mUsername!!, null)
 
-            mMessagesDatabaseReference!!.push().setValue(friendlyMessage)
+            mMessagesDatabaseReference.push().setValue(friendlyMessage)
 
             // Clear input box
             mMessageEditText.setText("")
@@ -117,7 +129,23 @@ class MainActivity : AppCompatActivity() {
             override fun onChildRemoved(p0: DataSnapshot?) {
             }
         }
-        mMessagesDatabaseReference!!.addChildEventListener(mChildEventListener)
+        mMessagesDatabaseReference.addChildEventListener(mChildEventListener)
+        mAuthStateListener = FirebaseAuth.AuthStateListener { p0 ->
+            val user = p0.currentUser
+            if (user != null) {
+                Toast.makeText(this@MainActivity, "You're signed in!", Toast.LENGTH_LONG).show()
+            } else {
+                startActivityForResult(
+                        AuthUI.getInstance()
+                                .createSignInIntentBuilder()
+                                .setIsSmartLockEnabled(false)
+                                .setAvailableProviders(
+                                        Arrays.asList(AuthUI.IdpConfig.Builder(AuthUI.EMAIL_PROVIDER).build(),
+                                                AuthUI.IdpConfig.Builder(AuthUI.GOOGLE_PROVIDER).build()))
+                                .build(),
+                        RC_SIGN_IN)
+            }
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -130,8 +158,13 @@ class MainActivity : AppCompatActivity() {
         return super.onOptionsItemSelected(item)
     }
 
-    companion object {
-        const val ANONYMOUS = "anonymous"
-        const val DEFAULT_MSG_LENGTH_LIMIT = 1000
+    override fun onResume() {
+        super.onResume()
+        mFirebaseAuth.addAuthStateListener(mAuthStateListener)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        mFirebaseAuth.removeAuthStateListener(mAuthStateListener)
     }
 }
