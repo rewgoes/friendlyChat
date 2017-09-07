@@ -10,8 +10,8 @@ import android.widget.TextView
 
 class MessageAdapter(context: Context, resource: Int, objects: List<FriendlyMessage>) : ArrayAdapter<FriendlyMessage>(context, resource, objects) {
 
-    override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-        var convertView = convertView
+    override fun getView(position: Int, convertViewArg: View?, parent: ViewGroup): View {
+        var convertView = convertViewArg
         if (convertView == null) {
             convertView = (context as Activity).layoutInflater.inflate(R.layout.item_message, parent, false)
         }

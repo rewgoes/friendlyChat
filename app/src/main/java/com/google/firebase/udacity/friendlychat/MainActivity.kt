@@ -106,19 +106,15 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onCancelled(p0: DatabaseError?) {
-                TODO("not implemented") //N.A
             }
 
             override fun onChildMoved(p0: DataSnapshot?, p1: String?) {
-                TODO("not implemented") //N.A
             }
 
             override fun onChildChanged(p0: DataSnapshot?, p1: String?) {
-                TODO("not implemented") //N.A
             }
 
             override fun onChildRemoved(p0: DataSnapshot?) {
-                TODO("not implemented") //N.A
             }
         }
         mMessagesDatabaseReference!!.addChildEventListener(mChildEventListener)
