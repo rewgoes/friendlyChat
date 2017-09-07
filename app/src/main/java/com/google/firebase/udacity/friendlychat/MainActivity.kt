@@ -40,6 +40,7 @@ class MainActivity : AppCompatActivity() {
         const val ANONYMOUS = "anonymous"
         const val DEFAULT_MSG_LENGTH_LIMIT = 1000
         const val RC_SIGN_IN = 1
+        const val RC_PHOTO_PICKER = 2
     }
 
     private lateinit var mMessageListView: ListView
@@ -84,7 +85,10 @@ class MainActivity : AppCompatActivity() {
 
         // ImagePickerButton shows an image picker to upload a image for a message
         mPhotoPickerButton.setOnClickListener {
-            // TODO: Fire an intent to show an image picker
+            val intent = Intent(Intent.ACTION_GET_CONTENT)
+            intent.type = "image/jpeg"
+            intent.putExtra(Intent.EXTRA_LOCAL_ONLY, true)
+            startActivityForResult(Intent.createChooser(intent, "Complete action using"), RC_PHOTO_PICKER)
         }
 
         // Enable Send button when there's text to send
