@@ -22,8 +22,6 @@ import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.RecyclerView
 import android.text.Editable
 import android.text.InputFilter
 import android.text.TextWatcher
@@ -32,9 +30,10 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.*
 import com.firebase.ui.auth.AuthUI
-import com.firebase.ui.database.FirebaseRecyclerAdapter
+import com.firebase.ui.database.FirebaseListAdapter
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.*
+import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings
 import com.google.firebase.storage.FirebaseStorage
@@ -54,7 +53,7 @@ class MainActivity : AppCompatActivity() {
         const val FRIENDLY_MSG_LENGTH_KEY = "friendly_msg_length"
     }
 
-    private lateinit var mRecyclerView: RecyclerView
+    private lateinit var mListView: ListView
     private lateinit var mProgressBar: ProgressBar
     private lateinit var mPhotoPickerButton: ImageButton
     private lateinit var mMessageEditText: EditText
@@ -72,7 +71,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var mFirebaseRemoteConfig: FirebaseRemoteConfig
 
-    private lateinit var mAdapter: FirebaseRecyclerAdapter<FriendlyMessage, MessageViewHolder>
+    private var mAdapter: FirebaseListAdapter<FriendlyMessage>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -90,36 +89,10 @@ class MainActivity : AppCompatActivity() {
 
         // Initialize references to views
         mProgressBar = findViewById(R.id.progressBar)
-        mRecyclerView = findViewById(R.id.recyclerView)
+        mListView = findViewById(R.id.messageListView)
         mPhotoPickerButton = findViewById(R.id.photoPickerButton)
         mMessageEditText = findViewById(R.id.messageEditText)
         mSendButton = findViewById(R.id.sendButton)
-
-        // Initialize message ListView and its adapter
-        mRecyclerView.layoutManager = LinearLayoutManager(this)
-        mAdapter = object : FirebaseRecyclerAdapter<FriendlyMessage, MessageViewHolder>(
-                FriendlyMessage::class.java,
-                R.layout.item_message,
-                MessageViewHolder::class.java,
-                mMessagesDatabaseReference) {
-            public override fun populateViewHolder(holder: MessageViewHolder, message: FriendlyMessage, position: Int) {
-                val isPhoto = message.photoUrl != null
-                if (isPhoto) {
-                    holder.messageTextView.visibility = View.GONE
-                    holder.photoImageView.visibility = View.VISIBLE
-
-                    GlideApp.with(holder.photoImageView.context)
-                            .load(message.photoUrl)
-                            .into(holder.photoImageView)
-                } else {
-                    holder.messageTextView.visibility = View.VISIBLE
-                    holder.photoImageView.visibility = View.GONE
-                    holder.messageTextView.text = message.text
-                }
-                holder.nameTextView.text = message.name
-            }
-        }
-        mRecyclerView.adapter = mAdapter
 
         // Initialize progress bar
         mProgressBar.visibility = ProgressBar.INVISIBLE
@@ -216,7 +189,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        mAdapter.cleanup()
+        mAdapter?.cleanup()
+        mListView.adapter = null
+        mAdapter = null
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -227,10 +202,42 @@ class MainActivity : AppCompatActivity() {
 
     private fun onSignInInitialize(username: String?) {
         mUsername = username ?: ANONYMOUS
+
+        // Initialize message ListView and its adapter
+        mAdapter = object : FirebaseListAdapter<FriendlyMessage>(
+                this,
+                FriendlyMessage::class.java,
+                R.layout.item_message,
+                mMessagesDatabaseReference) {
+            public override fun populateView(view: View, message: FriendlyMessage, position: Int) {
+                val photoImageView = view.findViewById<ImageView>(R.id.photoImageView)
+                val messageTextView = view.findViewById<TextView>(R.id.messageTextView)
+                val authorTextView = view.findViewById<TextView>(R.id.nameTextView)
+
+                val isPhoto = message.photoUrl != null
+                if (isPhoto) {
+                    messageTextView.visibility = View.GONE
+                    photoImageView.visibility = View.VISIBLE
+
+                    GlideApp.with(photoImageView.context)
+                            .load(message.photoUrl)
+                            .into(photoImageView)
+                } else {
+                    messageTextView.visibility = View.VISIBLE
+                    photoImageView.visibility = View.GONE
+                    messageTextView.text = message.text
+                }
+                authorTextView.text = message.name
+            }
+        }
+        mListView.adapter = mAdapter
     }
 
     private fun onSignOutCleanUp() {
         mUsername = ANONYMOUS
+        mAdapter?.cleanup()
+        mListView.adapter = null
+        mAdapter = null
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
