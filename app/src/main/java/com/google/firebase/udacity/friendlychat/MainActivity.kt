@@ -22,6 +22,8 @@ import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
+import android.support.v7.widget.LinearLayoutManager
+import android.support.v7.widget.RecyclerView
 import android.text.Editable
 import android.text.InputFilter
 import android.text.TextWatcher
@@ -50,7 +52,7 @@ class MainActivity : AppCompatActivity() {
         const val FRIENDLY_MSG_LENGTH_KEY = "friendly_msg_length"
     }
 
-    private lateinit var mMessageListView: ListView
+    private lateinit var mRecyclerView: RecyclerView
     private lateinit var mMessageAdapter: MessageAdapter
     private lateinit var mProgressBar: ProgressBar
     private lateinit var mPhotoPickerButton: ImageButton
@@ -86,15 +88,16 @@ class MainActivity : AppCompatActivity() {
 
         // Initialize references to views
         mProgressBar = findViewById(R.id.progressBar)
-        mMessageListView = findViewById(R.id.messageListView)
+        mRecyclerView = findViewById(R.id.recyclerView)
         mPhotoPickerButton = findViewById(R.id.photoPickerButton)
         mMessageEditText = findViewById(R.id.messageEditText)
         mSendButton = findViewById(R.id.sendButton)
 
         // Initialize message ListView and its adapter
         val friendlyMessages = ArrayList<FriendlyMessage>()
-        mMessageAdapter = MessageAdapter(this, R.layout.item_message, friendlyMessages)
-        mMessageListView.adapter = mMessageAdapter
+        mMessageAdapter = MessageAdapter(this, friendlyMessages)
+        mRecyclerView.layoutManager = LinearLayoutManager(this)
+        mRecyclerView.adapter = mMessageAdapter
 
         // Initialize progress bar
         mProgressBar.visibility = ProgressBar.INVISIBLE
