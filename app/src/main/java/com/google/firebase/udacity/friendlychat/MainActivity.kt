@@ -29,8 +29,10 @@ import android.text.InputFilter
 import android.text.TextWatcher
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
 import android.widget.*
 import com.firebase.ui.auth.AuthUI
+import com.firebase.ui.database.FirebaseRecyclerAdapter
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
@@ -53,7 +55,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private lateinit var mRecyclerView: RecyclerView
-    private lateinit var mMessageAdapter: MessageAdapter
     private lateinit var mProgressBar: ProgressBar
     private lateinit var mPhotoPickerButton: ImageButton
     private lateinit var mMessageEditText: EditText
@@ -71,6 +72,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var mChatPhotosStoreageReference: StorageReference
 
     private lateinit var mFirebaseRemoteConfig: FirebaseRemoteConfig
+
+    private lateinit var mAdapter: FirebaseRecyclerAdapter<FriendlyMessage, MessageViewHolder>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -94,10 +97,30 @@ class MainActivity : AppCompatActivity() {
         mSendButton = findViewById(R.id.sendButton)
 
         // Initialize message ListView and its adapter
-        val friendlyMessages = ArrayList<FriendlyMessage>()
-        mMessageAdapter = MessageAdapter(this, friendlyMessages)
         mRecyclerView.layoutManager = LinearLayoutManager(this)
-        mRecyclerView.adapter = mMessageAdapter
+        mAdapter = object : FirebaseRecyclerAdapter<FriendlyMessage, MessageViewHolder>(
+                FriendlyMessage::class.java,
+                R.layout.item_message,
+                MessageViewHolder::class.java,
+                mMessagesDatabaseReference) {
+            public override fun populateViewHolder(holder: MessageViewHolder, message: FriendlyMessage, position: Int) {
+                val isPhoto = message.photoUrl != null
+                if (isPhoto) {
+                    holder.messageTextView.visibility = View.GONE
+                    holder.photoImageView.visibility = View.VISIBLE
+
+                    GlideApp.with(holder.photoImageView.context)
+                            .load(message.photoUrl)
+                            .into(holder.photoImageView)
+                } else {
+                    holder.messageTextView.visibility = View.VISIBLE
+                    holder.photoImageView.visibility = View.GONE
+                    holder.messageTextView.text = message.text
+                }
+                holder.nameTextView.text = message.name
+            }
+        }
+        mRecyclerView.adapter = mAdapter
 
         // Initialize progress bar
         mProgressBar.visibility = ProgressBar.INVISIBLE
@@ -191,7 +214,11 @@ class MainActivity : AppCompatActivity() {
         super.onPause()
         mFirebaseAuth.removeAuthStateListener(mAuthStateListener)
         detachDatabaseReadListener()
-        mMessageAdapter.clear()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        mAdapter.cleanup()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -207,7 +234,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun onSignOutCleanUp() {
         mUsername = ANONYMOUS
-        mMessageAdapter.clear()
         detachDatabaseReadListener()
     }
 
@@ -224,14 +250,7 @@ class MainActivity : AppCompatActivity() {
     private fun attachDatabaseReadListener() {
         if (mChildEventListener == null) {
             mChildEventListener = object : ChildEventListener {
-                override fun onChildAdded(p0: DataSnapshot?, p1: String?) {
-                    val friendlyMessage = p0?.getValue(FriendlyMessage::class.java)
-
-                    if (friendlyMessage != null) {
-                        mMessageAdapter.add(friendlyMessage)
-                    }
-                }
-
+                override fun onChildAdded(p0: DataSnapshot?, p1: String?) {}
                 override fun onCancelled(p0: DatabaseError?) {}
                 override fun onChildMoved(p0: DataSnapshot?, p1: String?) {}
                 override fun onChildChanged(p0: DataSnapshot?, p1: String?) {}
