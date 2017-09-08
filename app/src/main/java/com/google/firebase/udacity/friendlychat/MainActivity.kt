@@ -64,7 +64,6 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var mFirebaseDatabase: FirebaseDatabase
     private lateinit var mMessagesDatabaseReference: DatabaseReference
-    private var mChildEventListener: ChildEventListener? = null
     private lateinit var mFirebaseAuth: FirebaseAuth
     private lateinit var mAuthStateListener: FirebaseAuth.AuthStateListener
 
@@ -213,7 +212,6 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         mFirebaseAuth.removeAuthStateListener(mAuthStateListener)
-        detachDatabaseReadListener()
     }
 
     override fun onDestroy() {
@@ -229,12 +227,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun onSignInInitialize(username: String?) {
         mUsername = username ?: ANONYMOUS
-        attachDatabaseReadListener()
     }
 
     private fun onSignOutCleanUp() {
         mUsername = ANONYMOUS
-        detachDatabaseReadListener()
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -244,26 +240,6 @@ class MainActivity : AppCompatActivity() {
                 true
             }
             else -> super.onOptionsItemSelected(item)
-        }
-    }
-
-    private fun attachDatabaseReadListener() {
-        if (mChildEventListener == null) {
-            mChildEventListener = object : ChildEventListener {
-                override fun onChildAdded(p0: DataSnapshot?, p1: String?) {}
-                override fun onCancelled(p0: DatabaseError?) {}
-                override fun onChildMoved(p0: DataSnapshot?, p1: String?) {}
-                override fun onChildChanged(p0: DataSnapshot?, p1: String?) {}
-                override fun onChildRemoved(p0: DataSnapshot?) {}
-            }
-            mMessagesDatabaseReference.addChildEventListener(mChildEventListener)
-        }
-    }
-
-    private fun detachDatabaseReadListener() {
-        if (mChildEventListener != null) {
-            mMessagesDatabaseReference.removeEventListener(mChildEventListener)
-            mChildEventListener = null
         }
     }
 
